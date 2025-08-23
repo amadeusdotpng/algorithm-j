@@ -1,0 +1,8 @@
+[package]
+name = "algorithm-j"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ast = { version = "0.1.0", path = "ast" }
+thiserror = "2.0.16"
