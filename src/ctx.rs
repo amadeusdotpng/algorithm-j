@@ -1,4 +1,4 @@
-use crate::typ::{PolyType, MonoType, VarType};
+use crate::typ::{PolyType, MonoType};
 use std::rc::Rc;
 
 
@@ -9,23 +9,42 @@ pub struct TypeContext {
 
 impl TypeContext {
     pub fn new() -> TypeContext {
-        TypeContext { current_id: 0, syms: vec![] }
+        TypeContext {
+            current_id: 0,
+            syms: vec![],
+        }
     }
 
     pub fn insert_sym(&mut self, sym: Rc<str>, t: PolyType) {
         self.syms.push((sym, t));
     }
 
-    pub fn lookup_sym(&mut self, sym: Rc<str>) -> Option<PolyType> {
-        self.syms.iter()
-            .rev()
-            .find(|(k, _)| *k == sym)
-            .map(|(_, t)| t.to_owned())
+    pub fn pop_sym(&mut self) {
+        self.syms.pop();
     }
 
+    pub fn lookup_sym(&self, sym: &str) -> Option<PolyType> {
+        self.syms.iter()
+            .rev()
+            .find(|(k, _)| &**k == sym)
+            .map(|(_, t)| t.clone())
+    }
+
+    /*
+    pub fn insert_sub(&mut self, id: u8, t: MonoType) {
+        self.subs.push((id, t));
+    }
+
+    pub fn lookup_sub(&self, id: u8) -> Option<MonoType> {
+        self.subs.iter()
+            .rev()
+            .find(|(k, _)| *k == id)
+            .map(|(_, t)| t.clone())
+    }
+    */
+
     pub fn fresh_variable(&mut self) -> MonoType {
-        let tvar = VarType::Unbound { tvar_id: self.current_id };
-        let t = MonoType::Var { tvar: Rc::new(tvar) };
+        let t = MonoType::Unbound { id: self.current_id };
         self.current_id += 1;
         t
     }
