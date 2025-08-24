@@ -6,13 +6,13 @@ pub enum Expression {
     Var { name: Rc<str> },
 
     // function application: e0 e1
-    App { e0: Rc<Expression>, e1: Rc<Expression> },
+    App { e0: Box<Expression>, e1: Box<Expression> },
 
     // lambda abstraction: \x . e
-    Abs { name: Rc<str>, e: Rc<Expression> },
+    Abs { name: Rc<str>, e: Box<Expression> },
 
     // let-in: let x = e0 in e1
-    Let { name: Rc<str>, e0: Rc<Expression>, e1: Rc<Expression> },
+    Let { name: Rc<str>, e0: Box<Expression>, e1: Box<Expression> },
 
     // booleans 
     True,
