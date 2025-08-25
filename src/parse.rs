@@ -3,7 +3,6 @@ use ast::Expression;
 use thiserror::Error;
 
 use std::str::Chars;
-use std::rc::Rc;
 use std::mem;
 
 macro_rules! T {
@@ -232,7 +231,7 @@ mod tests {
         assert_eq!(ctx.next(), Token::new(T![BSlash], 7, 1));
         assert_eq!(ctx.next(), Token::new(T![Eq], 8, 1));
         assert_eq!(ctx.next(), Token::new(T![Dot], 9, 1));
-        assert_eq!(ctx.next(), Token::new(TokenKind::LParen, 10, 1));
+        assert_eq!(ctx.next(), Token::new(T![LParen], 10, 1));
         assert_eq!(ctx.next(), Token::new(T![RParen], 11, 1));
         assert_eq!(ctx.next(), Token::new(T![Id], 13, 5));
         assert_eq!(ctx.next(), Token::new(T![True], 19, 4));
