@@ -1,5 +1,3 @@
-mod parse;
-
 mod typ;
 
 mod ctx;
@@ -20,12 +18,15 @@ fn main() {
             eprintln!("{}", e); return;
         }
 
-        let e = match parse::parse(buf.as_str()) {
+        let e = match ast::parse(buf.as_str()) {
             Ok(e)  => e,
-            Err(e) => { eprintln!("{:?}", e); return; },
+            Err(e) => {
+                eprintln!("{}", e);
+                buf.clear();
+                continue;
+            },
         };
 
-        // \f. \x. f (f x) : ('a -> 'a) -> 'a -> 'a
         let mut ctx = TypeContext::new();
         match typck::infer(&mut ctx, &e) {
             Ok(t)  => println!("{} : {}\n", buf.trim(), t),

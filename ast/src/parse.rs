@@ -1,4 +1,4 @@
-use ast::Expression;
+use crate::Expression;
 
 use thiserror::Error;
 
@@ -31,6 +31,25 @@ pub enum TokenKind {
     Error,
 }
 
+impl std::fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            T![Let]    => write!(f, r"let"),
+            T![In]     => write!(f, r"in"),
+            T![BSlash] => write!(f, r"\"),
+            T![Eq]     => write!(f, "="),
+            T![Dot]    => write!(f, "."),
+            T![LParen] => write!(f, "("),
+            T![RParen] => write!(f, ")"),
+            T![Id]     => write!(f, "ID"),
+            T![True]   => write!(f, "true"),
+            T![False]  => write!(f, "false"),
+            T![EOF]    => write!(f, "End of File"),
+            T![Error]  => write!(f, "Error"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Token {
     kind: TokenKind,
@@ -52,10 +71,19 @@ impl Default for Token {
 
 #[derive(Debug, PartialEq, Eq, Error)]
 pub enum ParseError {
-    #[error("Expecting token {0:?} but found {1:?} at position {2}")]
-    UnexpectedToken(TokenKind, TokenKind, usize),
-    #[error("Error Token: {0:?}")]
-    ErrorToken(Token),
+    #[error("Unexpected token '{unexpected}' found at position {pos}, expecting {}.",
+        expected.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(", ")
+    )]
+    UnexpectedToken {
+        unexpected: TokenKind,
+        expected: Vec<TokenKind>,
+        pos: usize,
+    },
+    #[error("Invalid Token '{lexeme}' at position {pos}.")]
+    InvalidToken {
+        lexeme: String,
+        pos: usize,
+    },
 }
 
 struct ParseContext<'src> {
@@ -78,7 +106,11 @@ impl ParseContext<'_> {
 
     fn expect(&mut self, k: TokenKind) -> Result<Token, ParseError> {
         let tok = self.peek_nth(0);
-        if tok.kind != k { Err(ParseError::UnexpectedToken(k, tok.kind, tok.pos)) }
+        if tok.kind != k { Err(ParseError::UnexpectedToken {
+            unexpected: tok.kind,
+            expected: vec![k],
+            pos: tok.pos,
+        })}
         else { Ok(self.next()) }
     }
 
@@ -201,15 +233,26 @@ fn parse_expr(ctx: &mut ParseContext) -> Result<Expression, ParseError> {
         T![True]  => Expression::True,
         T![False] => Expression::False,
 
+        T![Error] => return Err(ParseError::InvalidToken {
+            lexeme: ctx.lexeme(tok).to_string(),
+            pos: tok.pos,
+        }),
 
-        _ => return Err(ParseError::ErrorToken(tok)),
+        _ => return Err(ParseError::UnexpectedToken {
+            unexpected: tok.kind,
+            expected: vec![T![LParen], T![Id], T![BSlash], T![Let], T![True], T![False]],
+            pos: tok.pos
+        })
     };
 
     loop {
         let tok = ctx.peek_nth(0);
         if matches!(tok.kind, T![EOF] | T![RParen] | T![In]) { break; }
         if tok.kind == T![Error] {
-            return Err(ParseError::ErrorToken(tok))
+            return Err(ParseError::InvalidToken {
+                lexeme: ctx.lexeme(tok).to_string(),
+                pos: tok.pos,
+            })
         }
         let rhs = parse_expr(ctx)?;
         lhs = Expression::App { e0: lhs.into(), e1: rhs.into() };
