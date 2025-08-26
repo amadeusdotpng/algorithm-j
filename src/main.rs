@@ -29,7 +29,7 @@ fn main() {
 
         let mut ctx = TypeContext::new();
         match typck::infer(&mut ctx, &e) {
-            Ok(t)  => println!("{} : {}\n", buf.trim(), t),
+            Ok(t)  => println!("{}\n", t),
             Err(e) => eprintln!("{}", e),
         }
 

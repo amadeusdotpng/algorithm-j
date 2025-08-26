@@ -34,9 +34,22 @@ impl MonoType {
 impl std::fmt::Display for MonoType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MonoType::Bool          => write!(f, "Bool"),
-            MonoType::Func { l, r } => write!(f, "({} -> {})", l, r),
-            MonoType::Var { tvar }  => write!(f, "{}", tvar.borrow()),
+            MonoType::Func { l, r } => {
+                let mut l = l.clone();
+                while let MonoType::Var { tvar } = &*l.clone()
+                   && let VarType::Bound { typ } = &*tvar.borrow()
+                {
+                    l = typ.clone();
+                    continue;
+                }
+                match &*l {
+                    MonoType::Func { l: l_l, r: l_r } => write!(f, "({l_l} -> {l_r}) -> {r}"),
+                    l => write!(f, "{l} -> {r}")
+                }
+            }
+
+            MonoType::Var { tvar } => write!(f, "{}", tvar.borrow()),
+            MonoType::Bool => write!(f, "Bool"),
         }
     }
 }
