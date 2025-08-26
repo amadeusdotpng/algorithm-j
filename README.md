@@ -11,7 +11,10 @@ definitions used.
 need to implement.
 
 - [ ] better printing for types 
+  - [x] less parentheses in function types
+  - [ ] use letters or at least start at 0 for unbound types
 - [ ] add comments explaining the algorithm and implementation choices
+- [ ] output polytypes instead of monotypes
 
 ---
 
