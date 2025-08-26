@@ -13,7 +13,7 @@ impl std::fmt::Display for PolyType {
             .map(|id| id.to_string())
             .collect::<Vec<_>>()
             .join(", ");
-        write!(f, "\\{}. {}", tvar_ids, self.typ)
+        write!(f, "forall {}. {}", tvar_ids, self.typ)
     }
 }
 
