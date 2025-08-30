@@ -8,8 +8,8 @@ pub enum Expression {
     // just a variable
     Var { name: Rc<str> },
 
-    // function application: e0 e1
-    App { e0: Box<Expression>, e1: Box<Expression> },
+    // function application: f e
+    App { f: Box<Expression>, e: Box<Expression> },
 
     // lambda abstraction: \x . e
     Abs { name: Rc<str>, e: Box<Expression> },

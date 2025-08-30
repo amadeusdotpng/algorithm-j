@@ -261,7 +261,7 @@ fn parse_expr(ctx: &mut ParseContext, min_bp: u8) -> Result<Expression, ParseErr
         if l_bp < min_bp { break; }
 
         let rhs = parse_expr(ctx, r_bp)?;
-        lhs = Expression::App { e0: lhs.into(), e1: rhs.into() };
+        lhs = Expression::App { f: lhs.into(), e: rhs.into() };
     }
     
     Ok(lhs)
@@ -304,11 +304,11 @@ mod tests {
     fn test_app() {
         let e_parse = parse(r"(\x. x) true");
         let e_correct = Expression::App {
-            e0: Expression::Abs {
+            f: Expression::Abs {
                 name: "x".into(),
                 e: Expression::Var { name: "x".into() }.into(),
             }.into(),
-            e1: Expression::True.into(),
+            e: Expression::True.into(),
         };
 
         assert_eq!(e_parse, Ok(e_correct))
@@ -324,8 +324,8 @@ mod tests {
                 e: Expression::Var { name: "x".into() }.into(),
             }.into(),
             e1: Expression::App {
-                e0: Expression::Var { name: "id".into() }.into(),
-                e1: Expression::True.into(),
+                f: Expression::Var { name: "id".into() }.into(),
+                e: Expression::True.into(),
             }.into(),
         };
 
