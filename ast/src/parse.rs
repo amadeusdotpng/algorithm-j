@@ -195,14 +195,17 @@ impl ParseContext<'_> {
 
 pub fn parse(src: &str) -> Result<Expression, ParseError> {
     let mut ctx = ParseContext::new(src);
-    parse_expr(&mut ctx)
+    parse_expr(&mut ctx, 0)
 }
 
-fn parse_expr(ctx: &mut ParseContext) -> Result<Expression, ParseError> {
+// Basically just a Pratt Parser, except there's really only one "operator" which is the
+// left-associative application
+// https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
+fn parse_expr(ctx: &mut ParseContext, min_bp: u8) -> Result<Expression, ParseError> {
     let tok = ctx.next();
     let mut lhs = match tok.kind {
         T![LParen] => {
-            let e = parse_expr(ctx)?;
+            let e = parse_expr(ctx, 0)?;
             ctx.expect(T![RParen])?;
             e
         }
@@ -216,7 +219,7 @@ fn parse_expr(ctx: &mut ParseContext) -> Result<Expression, ParseError> {
             let name = ctx.expect(T![Id])?;
             let name = ctx.lexeme(name).into();
             ctx.expect(T![Dot])?;
-            let e = parse_expr(ctx)?.into();
+            let e = parse_expr(ctx, 0)?.into();
             Expression::Abs { name, e }
         }
 
@@ -224,9 +227,9 @@ fn parse_expr(ctx: &mut ParseContext) -> Result<Expression, ParseError> {
             let name = ctx.expect(T![Id])?;
             let name = ctx.lexeme(name).into();
             ctx.expect(T![Eq])?;
-            let e0 = parse_expr(ctx)?.into();
+            let e0 = parse_expr(ctx, 0)?.into();
             ctx.expect(T![In])?;
-            let e1 = parse_expr(ctx)?.into();
+            let e1 = parse_expr(ctx, 0)?.into();
             Expression::Let { name, e0, e1 }
         }
 
@@ -254,7 +257,10 @@ fn parse_expr(ctx: &mut ParseContext) -> Result<Expression, ParseError> {
                 pos: tok.pos,
             })
         }
-        let rhs = parse_expr(ctx)?;
+        let (l_bp, r_bp) = (1, 2); // binding power of App
+        if l_bp < min_bp { break; }
+
+        let rhs = parse_expr(ctx, r_bp)?;
         lhs = Expression::App { e0: lhs.into(), e1: rhs.into() };
     }
     
