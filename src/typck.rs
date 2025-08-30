@@ -87,16 +87,13 @@ fn occurs(id: u8, t: Rc<MonoType>) -> bool {
 fn unify(t0: Rc<MonoType>, t1: Rc<MonoType>) -> Result<()> {
     match (&*t0, &*t1) {
         (_, MonoType::Var { tvar }) => {
-            let mut tvar_mut = tvar.borrow_mut();
-            match *tvar_mut {
-                VarType::Bound { ref typ } => unify(t0, typ.clone())?,
-                VarType::Unbound { ref id } => { 
-                    if occurs(*id, t0.clone()) { 
-                        return Err(TypeError::RecursiveType);
-                    }
-                    *tvar_mut = VarType::Bound { typ: t0 };
+            match &*tvar.borrow() {
+                VarType::Bound { typ }  => return unify(t0, typ.clone()),
+                VarType::Unbound { id } => if occurs(*id, t0.clone()) { 
+                    return Err(TypeError::RecursiveType);
                 }
             }
+            *tvar.borrow_mut() = VarType::Bound { typ: t0 };
         }
         (MonoType::Var { .. }, _) => unify(t1, t0)?,
         (MonoType::Func { l: l_a, r: r_a }, MonoType::Func { l: l_b, r: r_b }) => {
