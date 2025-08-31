@@ -21,6 +21,7 @@ use thiserror::Error;
 
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::collections::HashSet;
 
 #[derive(Debug, Error)]
 pub enum TypeError {
@@ -73,25 +74,26 @@ fn instantiate(ctx: &mut TypeContext, t: Rc<PolyType>) -> Rc<MonoType> {
  * in 'typ' and "binding" them to a forall.
  * E.g. a -> b -> c => forall a b c. a -> b -> c */
 fn generalize(typ: Rc<MonoType>) -> PolyType {
-    fn find_vars(t: Rc<MonoType>) -> Vec<u8> {
+    fn find_vars(vars: &mut HashSet<u8>, t: Rc<MonoType>) {
         use MonoType::*;
         use VarType::*;
         match &*t {
-            Bool => vec![],
+            Bool => {},
             Func { l, r } => {
-                let mut l_vars = find_vars(l.clone());
-                let mut r_vars = find_vars(r.clone());
-                l_vars.append(&mut r_vars);
-                l_vars
+                find_vars(vars, l.clone());
+                find_vars(vars, r.clone());
             }
             Var { tvar } => match &*tvar.borrow() {
-                Bound { typ } => find_vars(typ.clone()),
-                Unbound { id } => vec![*id],
+                Bound { typ } => { find_vars(vars, typ.clone()); }
+                Unbound { id } => { vars.insert(*id); },
             }
         }
     }
 
-    let tvar_ids = find_vars(typ.clone()).into();
+    let mut vars = HashSet::new();
+    find_vars(&mut vars, typ.clone());
+    let tvar_ids = vars.into_iter().collect();
+
     PolyType { tvar_ids, typ }
 }
 
@@ -149,7 +151,7 @@ fn unify(t0: Rc<MonoType>, t1: Rc<MonoType>) -> Result<()> {
 /* This is the main part of Algorithm J. We closely follow the inference rules.
  * Some names in the inference rules are changed to fit the names in the
  * implementation */
-pub fn infer(ctx: &mut TypeContext, e: &Expression) -> Result<Rc<MonoType>> {
+fn infer_expr(ctx: &mut TypeContext, e: &Expression) -> Result<Rc<MonoType>> {
     use Expression::*;
     match e {
 
@@ -177,8 +179,8 @@ pub fn infer(ctx: &mut TypeContext, e: &Expression) -> Result<Rc<MonoType>> {
          *  infer ctx (f x) = t2
          */
         App { f, e } => {
-            let t0 = infer(ctx, f)?;
-            let t1 = infer(ctx, e)?;
+            let t0 = infer_expr(ctx, f)?;
+            let t1 = infer_expr(ctx, e)?;
             let t2 = Rc::new(ctx.fresh_variable());
             
             let typ_func = MonoType::Func { l: t1, r: t2.clone() }.into();
@@ -197,7 +199,7 @@ pub fn infer(ctx: &mut TypeContext, e: &Expression) -> Result<Rc<MonoType>> {
             let t0 = Rc::new(t0.as_poly());
 
             ctx.insert_sym(name.clone(), t0.clone());
-            let t1 = infer(ctx, e)?;
+            let t1 = infer_expr(ctx, e)?;
             ctx.pop_sym();
 
             Ok(MonoType::Func { l: t0.typ.clone(), r: t1 }.into())
@@ -209,11 +211,11 @@ pub fn infer(ctx: &mut TypeContext, e: &Expression) -> Result<Rc<MonoType>> {
          *  infer ctx (let name = e0 in e1) = t1
          */
         Let { name, e0, e1 } => {
-            let t0 = infer(ctx, e0)?;
+            let t0 = infer_expr(ctx, e0)?;
             let t0 = generalize(t0).into();
 
             ctx.insert_sym(name.clone(), t0);
-            let t1 = infer(ctx, e1)?;
+            let t1 = infer_expr(ctx, e1)?;
             ctx.pop_sym();
 
             Ok(t1)
@@ -221,4 +223,10 @@ pub fn infer(ctx: &mut TypeContext, e: &Expression) -> Result<Rc<MonoType>> {
 
         True | False => Ok(MonoType::Bool.into())
     }
+}
+
+pub fn infer(e: Expression) -> Result<PolyType> {
+    let mut ctx = TypeContext::new();
+    let t = infer_expr(&mut ctx, &e)?;
+    Ok(generalize(t))
 }

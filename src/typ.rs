@@ -10,11 +10,16 @@ pub struct PolyType {
 
 impl std::fmt::Display for PolyType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let tvar_ids = self.tvar_ids.iter()
-            .map(|id| id.to_string())
+        if self.tvar_ids.len() == 0 {
+            return write!(f, "{}", self.typ);
+        }
+
+        let vars = (0..self.tvar_ids.len() as u8)
+            .map(|n| ((b'a' + n) as char).to_string())
             .collect::<Vec<_>>()
-            .join(", ");
-        write!(f, "forall {}. {}", tvar_ids, self.typ)
+            .join(" ");
+
+        write!(f, "forall {}. {}", vars, self.typ)
     }
 }
 
@@ -115,7 +120,7 @@ impl std::fmt::Display for DisplayType<'_> {
                         .expect(format!("Unbound variable of id {id} not found in list").as_str());
 
                     // Hopefully there won't be more than 26 unbound variables
-                    let char_id = ((b'a' as u8) + offset as u8) as char;
+                    let char_id = (b'a' + offset as u8) as char;
                     write!(f, "'{char_id}")
                 }
             }

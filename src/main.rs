@@ -27,8 +27,7 @@ fn main() {
             },
         };
 
-        let mut ctx = TypeContext::new();
-        match typck::infer(&mut ctx, &e) {
+        match typck::infer(e) {
             Ok(t)  => println!("{}\n", t),
             Err(e) => eprintln!("{}", e),
         }
