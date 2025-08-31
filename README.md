@@ -7,14 +7,9 @@ presented in the algorithm.
 The `src/typck.rs` file contains most of the implementation. The `src/typ.rs` contains the type
 definitions used. 
 
-**Note**: this project is still not complete! There are still missing quality of life features I
-need to implement.
-
-- [ ] better printing for types 
-  - [x] less parentheses in function types
-  - [ ] use letters or at least start at 0 for unbound types
-- [ ] add comments explaining the algorithm and implementation choices
-- [ ] output polytypes instead of monotypes
+**Note**: This project was for learning purposes and is probably really
+inefficient (probably used `Rc` way too much and I'm not sure if `RefCell` is any good for
+representing graphs).
 
 ---
 
@@ -26,8 +21,7 @@ Make sure that `cargo` is installed, then run `cargo run`.
 
 ## Resources Used
 
-This was a project made for learning more about type-checking and type-inference, here are some
-useful resources I used that helped me out!
+Here are some useful resources I used that helped me out.
 
 - [jfecher - algorithm-j](https://github.com/jfecher/algorithm-j)
 - [Max Bernstein and River Dillion Keefer - Damas-Hindley-Milner inference two ways](https://bernsteinbear.com/blog/type-inference/)
